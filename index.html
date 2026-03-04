@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RoadGuard — Environmental Compliance System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080c10;
+    --surface:  #0d1117;
+    --card:     #111820;
+    --border:   #1e2d3d;
+    --accent:   #00e5ff;
+    --green:    #00ff9d;
+    --red:      #ff3b5c;
+    --yellow:   #ffd166;
+    --text:     #e2eaf4;
+    --muted:    #4a6580;
+    --glow:     rgba(0,229,255,0.15);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 64px;
+    background: rgba(8,12,16,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .logo-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+
+  .nav-links { display: flex; gap: 2rem; }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+
+  .nav-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.7rem;
+    color: var(--green);
+  }
+  .status-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 1.5s infinite; }
+
+  .page { display: none; padding: 2rem; position: relative; z-index: 1; animation: fadeIn 0.3s ease; }
+  .page.active { display: block; }
+
+  .hero {
+    text-align: center;
+    padding: 5rem 2rem 3rem;
+    position: relative;
+  }
+  .hero-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 0.3rem 1rem;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: slideUp 0.6s 0.2s forwards;
+  }
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 1rem;
+    opacity: 0;
+    animation: slideUp 0.6s 0.4s forwards;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p {
+    color: var(--muted);
+    font-size: 0.85rem;
+    max-width: 500px;
+    margin: 0 auto 3rem;
+    line-height: 1.8;
+    opacity: 0;
+    animation: slideUp 0.6s 0.6s forwards;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: slideUp 0.6s 0.8s forwards;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+  }
+  .stat-card.blue::before  { background: var(--accent); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.red::before   { background: var(--red); }
+  .stat-card.yellow::before{ background: var(--yellow); }
+  .stat-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+
+  .stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+  .stat-card.blue  .stat-value { color: var(--accent); }
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.red   .stat-value { color: var(--red); }
+  .stat-card.yellow .stat-value{ color: var(--yellow); }
+  .stat-sub { font-size: 0.65rem; color: var(--muted); }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section-title::before {
+    content: '';
+    display: inline-block;
+    width: 12px; height: 2px;
+    background: var(--accent);
+  }
+  .section-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.6rem;
+    background: rgba(0,229,255,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0,229,255,0.3);
+    letter-spacing: 0.05em;
+  }
+
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+  }
+  thead th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr {
+    border-bottom: 1px solid rgba(30,45,61,0.5);
+    transition: background 0.15s;
+  }
+  tbody tr:hover { background: rgba(0,229,255,0.03); }
+  tbody td {
+    padding: 0.85rem 1rem;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    border: 1px solid;
+  }
+  .badge-construction { color: var(--yellow);  border-color: rgba(255,209,102,0.4); background: rgba(255,209,102,0.08); }
+  .badge-planning     { color: var(--accent);  border-color: rgba(0,229,255,0.4);   background: rgba(0,229,255,0.08); }
+  .badge-completed    { color: var(--green);   border-color: rgba(0,255,157,0.4);   background: rgba(0,255,157,0.08); }
+  .badge-suspended    { color: var(--red);     border-color: rgba(255,59,92,0.4);   background: rgba(255,59,92,0.08); }
+  .badge-approved     { color: #a78bfa;        border-color: rgba(167,139,250,0.4); background: rgba(167,139,250,0.08); }
+  .badge-critical     { color: var(--red);     border-color: rgba(255,59,92,0.4);   background: rgba(255,59,92,0.08); }
+  .badge-warning      { color: var(--yellow);  border-color: rgba(255,209,102,0.4); background: rgba(255,209,102,0.08); }
+  .badge-high   { color: var(--red);    border-color: rgba(255,59,92,0.3);  background: rgba(255,59,92,0.06); }
+  .badge-medium { color: var(--yellow); border-color: rgba(255,209,102,0.3);background: rgba(255,209,102,0.06); }
+  .badge-low    { color: var(--green);  border-color: rgba(0,255,157,0.3);  background: rgba(0,255,157,0.06); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  @media(max-width: 900px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+  .alert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    margin-bottom: 0.75rem;
+    background: rgba(255,59,92,0.03);
+    transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .alert-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--red);
+  }
+  .alert-item:hover { border-color: var(--red); }
+  .alert-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+  .alert-body { flex: 1; }
+  .alert-title { font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.3rem; }
+  .alert-meta  { font-size: 0.65rem; color: var(--muted); line-height: 1.8; }
+  .alert-value { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--red); text-align: right; flex-shrink: 0; }
+  .alert-unit  { font-size: 0.6rem; color: var(--muted); display: block; }
+
+  .progress-row { margin-bottom: 1.2rem; }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    margin-bottom: 0.4rem;
+    color: var(--muted);
+  }
+  .progress-label span:last-child { color: var(--text); }
+  .progress-track {
+    height: 4px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+  }
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 20px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
+    animation: shimmer 1.5s infinite;
+  }
+  .progress-fill.danger { background: var(--red); }
+  .progress-fill.ok     { background: var(--green); }
+
+  .inspector-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .inspector-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .inspector-avatar {
+    width: 40px; height: 40px;
+    border-radius: 0;
+    background: linear-gradient(135deg, var(--accent), var(--green));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--bg);
+    margin-bottom: 0.75rem;
+  }
+  .inspector-name { font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.2rem; }
+  .inspector-dept { font-size: 0.65rem; color: var(--muted); margin-bottom: 0.75rem; }
+  .inspector-stats { display: flex; gap: 1rem; }
+  .inspector-stat { font-size: 0.65rem; color: var(--muted); }
+  .inspector-stat span { display: block; color: var(--accent); font-size: 0.9rem; font-family: 'Syne', sans-serif; font-weight: 700; }
+
+  .mongo-doc {
+    background: #050810;
+    border: 1px solid var(--border);
+    border-left: 3px solid #47a248;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.9;
+  }
+  .mongo-key   { color: #47a248; }
+  .mongo-str   { color: var(--yellow); }
+  .mongo-num   { color: var(--accent); }
+  .mongo-warn  { color: var(--red); font-weight: bold; }
+  .mongo-label {
+    display: inline-block;
+    font-size: 0.6rem;
+    background: #47a248;
+    color: #000;
+    padding: 0.15rem 0.4rem;
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .gauge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+  .gauge-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .gauge-card:hover { border-color: var(--accent); }
+  .gauge-param { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem; }
+  .gauge-value { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--accent); }
+  .gauge-unit  { font-size: 0.65rem; color: var(--muted); margin-top: 0.2rem; }
+  .gauge-reg   { font-size: 0.58rem; color: var(--muted); margin-top: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
+  @keyframes scanline { 0%{transform:translateY(-100%)} 100%{transform:translateY(100vh)} }
+
+  .scanline {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.15), transparent);
+    animation: scanline 8s linear infinite;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  footer {
+    margin-top: 4rem;
+    border-top: 1px solid var(--border);
+    padding: 2rem;
+    text-align: center;
+    font-size: 0.65rem;
+    color: var(--muted);
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.1em;
+  }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="scanline"></div>
+
+<nav>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    ROADGUARD
+  </div>
+  <div class="nav-links">
+    <a class="active" onclick="showPage('dashboard', event)">Dashboard</a>
+    <a onclick="showPage('projects', event)">Projects</a>
+    <a onclick="showPage('alerts', event)">Alerts</a>
+    <a onclick="showPage('inspectors', event)">Inspectors</a>
+    <a onclick="showPage('predict', event)" style="color:var(--green);border:1px solid rgba(0,255,157,0.3);padding:0.2rem 0.6rem">⬡ AI Predict</a>
+  </div>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    SYSTEM LIVE
+  </div>
+</nav>
+
+<!-- PAGE 1: DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="hero">
+    <div class="hero-tag">Environmental Compliance Monitor</div>
+    <h1>Road<span>Guard</span><br>System</h1>
+    <p>Real-time environmental monitoring for road construction projects. MySQL + MongoDB + Python.</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card blue">
+      <div class="stat-label">Total Projects</div>
+      <div class="stat-value" id="stat-total-projects">6</div>
+      <div class="stat-sub">Across all regions</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="stat-label">Under Construction</div>
+      <div class="stat-value" id="stat-construction">2</div>
+      <div class="stat-sub">Actively monitored</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">Open Alerts</div>
+      <div class="stat-value" id="stat-open-alerts">4</div>
+      <div class="stat-sub" id="stat-alert-sub">2 critical, 2 warning</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Total Budget</div>
+      <div class="stat-value" id="stat-budget">$271M</div>
+      <div class="stat-sub">All projects combined</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="section-header">
+        <div class="section-title">Active Violations</div>
+        <div class="section-badge">LIVE</div>
+      </div>
+      <div id="dashboard-alerts"></div>
+    </div>
+
+    <div>
+      <div class="section-header">
+        <div class="section-title">Budget Spending</div>
+        <div class="section-badge">v_Budget_Spending</div>
+      </div>
+      <div class="card">
+        <div class="progress-row">
+          <div class="progress-label"><span>Greenwood Bypass</span><span>$347K / $45M</span></div>
+          <div class="progress-track"><div class="progress-fill ok" style="width:0.8%"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label"><span>Southern Link Road</span><span>$170K / $79.2M</span></div>
+          <div class="progress-track"><div class="progress-fill ok" style="width:0.2%"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label"><span>Highland Tunnel Route</span><span>$110K / $95M</span></div>
+          <div class="progress-track"><div class="progress-fill ok" style="width:0.12%"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label"><span>Northbridge Corridor</span><span>$0 / $28M</span></div>
+          <div class="progress-track"><div class="progress-fill ok" style="width:0%"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label"><span>Eastfield Expressway</span><span>$0 / $19M</span></div>
+          <div class="progress-track"><div class="progress-fill ok" style="width:0%"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label"><span>Westside Connector</span><span>$0 / $12M</span></div>
+          <div class="progress-track"><div class="progress-fill ok" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-top:1.5rem">
+        <div class="section-title">Project Status</div>
+      </div>
+      <div class="three-col">
+        <div class="stat-card yellow" style="padding:1rem">
+          <div class="stat-label">Construction</div>
+          <div class="stat-value" id="stat-construction2" style="font-size:1.8rem">2</div>
+        </div>
+        <div class="stat-card blue" style="padding:1rem">
+          <div class="stat-label">Planning</div>
+          <div class="stat-value" id="stat-planning" style="font-size:1.8rem">1</div>
+        </div>
+        <div class="stat-card green" style="padding:1rem">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" id="stat-completed" style="font-size:1.8rem">1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2: PROJECTS -->
+<div id="page-projects" class="page">
+  <div class="section-header">
+    <div class="section-title">Road Projects — MySQL Table</div>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <div class="section-badge">Road_Projects</div>
+      <button class="btn-add" onclick="openModal('project-modal')">+ Add Project</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Project Name</th>
+            <th>Location</th>
+            <th>Length</th>
+            <th>Status</th>
+            <th>Contractor</th>
+            <th>Budget (USD)</th>
+            <th>Priority</th>
+            <th>Start Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="projects-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-header" style="margin-top:2rem">
+    <div class="section-title">Environmental Legal Limits</div>
+    <div class="section-badge">Environmental_Limits</div>
+  </div>
+  <p style="font-size:0.72rem;color:var(--muted);margin-bottom:1.25rem">Legal thresholds stored in MySQL. Python compares MongoDB readings against these values.</p>
+
+  <div style="margin-bottom:1.5rem">
+    <div style="font-family:'Syne',sans-serif;font-size:0.75rem;color:var(--yellow);margin-bottom:0.75rem;letter-spacing:0.05em">▸ GREENWOOD BYPASS</div>
+    <div class="gauge-grid">
+      <div class="gauge-card"><div class="gauge-param">Noise</div><div class="gauge-value">70</div><div class="gauge-unit">dB max</div><div class="gauge-reg">EPA-NOISE-2022</div></div>
+      <div class="gauge-card"><div class="gauge-param">PM2.5 Dust</div><div class="gauge-value">35</div><div class="gauge-unit">ug/m³ max</div><div class="gauge-reg">NAAQS-PM25</div></div>
+      <div class="gauge-card"><div class="gauge-param">Water pH</div><div class="gauge-value">6.5–8.5</div><div class="gauge-unit">range</div><div class="gauge-reg">EPA-WATER-2021</div></div>
+      <div class="gauge-card"><div class="gauge-param">CO₂</div><div class="gauge-value">400</div><div class="gauge-unit">ppm max</div><div class="gauge-reg">LOCAL-AIR-2023</div></div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:'Syne',sans-serif;font-size:0.75rem;color:var(--yellow);margin-bottom:0.75rem;letter-spacing:0.05em">▸ SOUTHERN LINK ROAD</div>
+    <div class="gauge-grid">
+      <div class="gauge-card"><div class="gauge-param">Noise</div><div class="gauge-value">75</div><div class="gauge-unit">dB max</div><div class="gauge-reg">EPA-NOISE-2022</div></div>
+      <div class="gauge-card"><div class="gauge-param">PM2.5 Dust</div><div class="gauge-value">40</div><div class="gauge-unit">ug/m³ max</div><div class="gauge-reg">NAAQS-PM25</div></div>
+      <div class="gauge-card"><div class="gauge-param">Vibration</div><div class="gauge-value">5</div><div class="gauge-unit">mm/s max</div><div class="gauge-reg">ISO-4866</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3: ALERTS -->
+<div id="page-alerts" class="page">
+  <div class="section-header">
+    <div class="section-title">Compliance Alerts</div>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <div class="section-badge">Compliance_Alerts</div>
+      <button class="btn-add" onclick="openModal('alert-modal')">+ Add Alert</button>
+    </div>
+  </div>
+  <p style="font-size:0.72rem;color:var(--muted);margin-bottom:1.5rem">Violations detected by Python bridge. Automatically written back into MySQL.</p>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Alert ID</th>
+            <th>Project</th>
+            <th>Parameter</th>
+            <th>Legal Limit</th>
+            <th>Actual Reading</th>
+            <th>Exceeded By</th>
+            <th>Level</th>
+            <th>MongoDB Doc</th>
+            <th>Resolved</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="alerts-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- PAGE 4: INSPECTORS -->
+<div id="page-inspectors" class="page">
+  <div class="section-header">
+    <div class="section-title">Inspector Registry</div>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <div class="section-badge">Inspectors</div>
+      <button class="btn-add" onclick="openModal('inspector-modal')">+ Add Inspector</button>
+    </div>
+  </div>
+  <p style="font-size:0.72rem;color:var(--muted);margin-bottom:1.5rem">Stored in MySQL. Linked to projects via <code style="color:var(--accent)">Inspection_Assignments</code> table (FOREIGN KEY).</p>
+
+  <div class="three-col" id="inspectors-grid" style="margin-bottom:2rem"></div>
+
+  <div class="section-header">
+    <div class="section-title">Assignment Table</div>
+    <div class="section-badge">Inspection_Assignments</div>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Assignment ID</th><th>Inspector</th><th>Project</th><th>Assigned Date</th><th>Visit Count</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="color:var(--muted)">#1</td><td style="color:var(--accent)">Dr. Maya Patel</td><td>Greenwood Bypass</td><td style="color:var(--muted)">2024-01-20</td><td>5</td></tr>
+          <tr><td style="color:var(--muted)">#2</td><td style="color:var(--accent)">James Okafor</td><td>Greenwood Bypass</td><td style="color:var(--muted)">2024-01-20</td><td>4</td></tr>
+          <tr><td style="color:var(--muted)">#3</td><td style="color:var(--accent)">Sarah Chen</td><td>Northbridge Corridor</td><td style="color:var(--muted)">2024-03-05</td><td>2</td></tr>
+          <tr><td style="color:var(--muted)">#4</td><td style="color:var(--accent)">Dr. Maya Patel</td><td>Southern Link Road</td><td style="color:var(--muted)">2023-11-10</td><td>8</td></tr>
+          <tr><td style="color:var(--muted)">#5</td><td style="color:var(--accent)">Ravi Menon</td><td>Southern Link Road</td><td style="color:var(--muted)">2023-11-10</td><td>3</td></tr>
+          <tr><td style="color:var(--muted)">#6</td><td style="color:var(--muted);text-decoration:line-through">Lisa Thornton</td><td>Eastfield Expressway</td><td style="color:var(--muted)">2024-06-05</td><td>6</td></tr>
+          <tr><td style="color:var(--muted)">#7</td><td style="color:var(--accent)">Sarah Chen</td><td>Westside Connector</td><td style="color:var(--muted)">2024-09-05</td><td>1</td></tr>
+          <tr><td style="color:var(--muted)">#8</td><td style="color:var(--accent)">James Okafor</td><td>Highland Tunnel Route</td><td style="color:var(--muted)">2023-05-10</td><td>0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<footer>
+  ROADGUARD ENVIRONMENTAL COMPLIANCE SYSTEM &nbsp;|&nbsp; MySQL + MongoDB + Python &nbsp;|&nbsp; PCCST402 Project
+</footer>
+
+<style>
+  .btn-add {
+    background: rgba(0,229,255,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0,229,255,0.4);
+    padding: 0.3rem 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .btn-add:hover { background: rgba(0,229,255,0.2); border-color: var(--accent); }
+
+  .btn-delete {
+    background: rgba(255,59,92,0.08);
+    color: var(--red);
+    border: 1px solid rgba(255,59,92,0.3);
+    padding: 0.2rem 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .btn-delete:hover { background: rgba(255,59,92,0.2); }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    width: 100%;
+    max-width: 520px;
+    animation: fadeIn 0.2s ease;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+  .modal-close {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); }
+  .form-group { margin-bottom: 1rem; }
+  .form-label { display: block; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+  .form-input, .form-select {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.6rem 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--accent); }
+  .form-select option { background: var(--card); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .btn-submit {
+    width: 100%;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    padding: 0.8rem;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: opacity 0.2s;
+  }
+  .btn-submit:hover { opacity: 0.85; }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--card);
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 0.75rem 1.25rem;
+    font-size: 0.72rem;
+    z-index: 2000;
+    animation: slideUp 0.3s ease;
+    letter-spacing: 0.05em;
+  }
+  .toast.error { border-color: var(--red); color: var(--red); }
+</style>
+
+<!-- ADD PROJECT MODAL -->
+<div class="modal-overlay" id="project-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('project-modal')">✕</button>
+    <div class="modal-title">+ INSERT INTO Road_Projects</div>
+    <div class="form-group">
+      <label class="form-label">Project Name *</label>
+      <input class="form-input" id="p-name" placeholder="e.g. Central Highway Link">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Location *</label>
+        <input class="form-input" id="p-location" placeholder="e.g. North Zone, Block 3">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Length (km)</label>
+        <input class="form-input" id="p-length" placeholder="e.g. 10.5" type="number" step="0.1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Status *</label>
+        <select class="form-select" id="p-status">
+          <option value="Planning">Planning</option>
+          <option value="Approved">Approved</option>
+          <option value="Under_Construction">Under Construction</option>
+          <option value="Completed">Completed</option>
+          <option value="Suspended">Suspended</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select class="form-select" id="p-priority">
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Contractor</label>
+        <input class="form-input" id="p-contractor" placeholder="e.g. BuildCo Ltd">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Budget (USD)</label>
+        <input class="form-input" id="p-budget" placeholder="e.g. 35000000" type="number">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Start Date</label>
+      <input class="form-input" id="p-date" type="date">
+    </div>
+    <button class="btn-submit" onclick="addProject()">EXECUTE INSERT</button>
+  </div>
+</div>
+
+<!-- ADD ALERT MODAL -->
+<div class="modal-overlay" id="alert-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('alert-modal')">✕</button>
+    <div class="modal-title">+ INSERT INTO Compliance_Alerts</div>
+    <div class="form-group">
+      <label class="form-label">Project *</label>
+      <select class="form-select" id="a-project"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Parameter *</label>
+        <input class="form-input" id="a-param" placeholder="e.g. Noise_dB">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Legal Limit</label>
+        <input class="form-input" id="a-limit" placeholder="e.g. 70.0 dB">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Actual Reading *</label>
+        <input class="form-input" id="a-actual" placeholder="e.g. 85.3 dB">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Exceeded By</label>
+        <input class="form-input" id="a-exceeded" placeholder="e.g. +21.9%">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Alert Level *</label>
+      <select class="form-select" id="a-level">
+        <option value="Critical">🔴 Critical</option>
+        <option value="Warning">🟡 Warning</option>
+      </select>
+    </div>
+    <button class="btn-submit" onclick="addAlert()">EXECUTE INSERT</button>
+  </div>
+</div>
+
+<!-- ADD INSPECTOR MODAL -->
+<div class="modal-overlay" id="inspector-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('inspector-modal')">✕</button>
+    <div class="modal-title">+ INSERT INTO Inspectors</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Full Name *</label>
+        <input class="form-input" id="i-name" placeholder="e.g. Dr. Jane Smith">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Department *</label>
+        <input class="form-input" id="i-dept" placeholder="e.g. Air Quality Division">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Projects Count</label>
+        <input class="form-input" id="i-projects" placeholder="0" type="number" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Visit Count</label>
+        <input class="form-input" id="i-visits" placeholder="0" type="number" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select class="form-select" id="i-status">
+        <option value="Active">Active</option>
+        <option value="Inactive">Inactive</option>
+      </select>
+    </div>
+    <button class="btn-submit" onclick="addInspector()">EXECUTE INSERT</button>
+  </div>
+</div>
+
+<script>
+const SQL_SEED = `
+CREATE TABLE Road_Projects (
+  ProjectID   INT AUTO_INCREMENT PRIMARY KEY,
+  Name        VARCHAR(100) NOT NULL,
+  Location    VARCHAR(150),
+  Length_km   DECIMAL(5,1),
+  Status      ENUM('Planning','Approved','Under_Construction','Completed','Suspended'),
+  Contractor  VARCHAR(100),
+  Budget_USD  DECIMAL(15,2),
+  Priority    ENUM('High','Medium','Low'),
+  Start_Date  DATE
+);
+
+CREATE TABLE Compliance_Alerts (
+  AlertID         INT AUTO_INCREMENT PRIMARY KEY,
+  ProjectID       INT NOT NULL,
+  Parameter       VARCHAR(50),
+  Limit_Value     VARCHAR(30),
+  Actual_Value    VARCHAR(30),
+  Exceeded_By_Pct VARCHAR(15),
+  Alert_Level     ENUM('Warning','Critical'),
+  MongoDB_DocRef  VARCHAR(60),
+  Resolved        BOOLEAN DEFAULT FALSE,
+  FOREIGN KEY (ProjectID) REFERENCES Road_Projects(ProjectID) ON DELETE CASCADE
+);
+
+CREATE TABLE Inspectors (
+  InspectorID  INT AUTO_INCREMENT PRIMARY KEY,
+  Full_Name    VARCHAR(100) NOT NULL,
+  Department   VARCHAR(80),
+  Project_Count INT DEFAULT 0,
+  Visit_Count  INT DEFAULT 0,
+  Status       ENUM('Active','Inactive') DEFAULT 'Active'
+);
+
+INSERT INTO Road_Projects (ProjectID, Name, Location, Length_km, Status, Contractor, Budget_USD, Priority, Start_Date)
+VALUES (1, 'Greenwood Bypass', 'Greenwood County, Sector 4', 12.5, 'Under_Construction', 'ARC BuildCo Ltd', 45000000, 'High', '2024-01-15');
+
+INSERT INTO Road_Projects (ProjectID, Name, Location, Length_km, Status, Contractor, Budget_USD, Priority, Start_Date)
+VALUES (2, 'Northbridge Corridor', 'Northern Metro Zone, Block 7', 8.2, 'Planning', 'RoadTech Solutions', 28000000, 'Medium', '2024-03-01');
+
+INSERT INTO Road_Projects (ProjectID, Name, Location, Length_km, Status, Contractor, Budget_USD, Priority, Start_Date)
+VALUES (3, 'Southern Link Road', 'South District Highway Zone', 20.0, 'Under_Construction', 'GreenPath Inc', 79200000, 'High', '2023-11-01');
+
+INSERT INTO Road_Projects (ProjectID, Name, Location, Length_km, Status, Contractor, Budget_USD, Priority, Start_Date)
+VALUES (4, 'Eastfield Expressway', 'East Industrial Zone, Route 9', 5.5, 'Completed', 'FastTrack Builders', 19000000, 'Low', '2024-06-01');
+
+INSERT INTO Road_Projects (ProjectID, Name, Location, Length_km, Status, Contractor, Budget_USD, Priority, Start_Date)
+VALUES (5, 'Westside Connector', 'West Residential Belt, Zone 3', 3.8, 'Approved', 'CityRoads Ltd', 12000000, 'Medium', '2024-09-01');
+
+INSERT INTO Road_Projects (ProjectID, Name, Location, Length_km, Status, Contractor, Budget_USD, Priority, Start_Date)
+VALUES (6, 'Highland Tunnel Route', 'Highland Pass, Mountain Sec', 15.0, 'Suspended', 'AlpineBuild Corp', 95000000, 'High', '2023-05-01');
+
+INSERT INTO Compliance_Alerts (AlertID, ProjectID, Parameter, Limit_Value, Actual_Value, Exceeded_By_Pct, Alert_Level, MongoDB_DocRef, Resolved)
+VALUES (1, 1, 'Noise_dB', '70.0 dB', '85.3 dB', '+21.9%', 'Critical', 'mongo_doc_001', FALSE);
+
+INSERT INTO Compliance_Alerts (AlertID, ProjectID, Parameter, Limit_Value, Actual_Value, Exceeded_By_Pct, Alert_Level, MongoDB_DocRef, Resolved)
+VALUES (2, 1, 'PM2_5', '35.0 ug/m3', '41.5 ug/m3', '+18.6%', 'Warning', 'mongo_doc_002', FALSE);
+
+INSERT INTO Compliance_Alerts (AlertID, ProjectID, Parameter, Limit_Value, Actual_Value, Exceeded_By_Pct, Alert_Level, MongoDB_DocRef, Resolved)
+VALUES (3, 1, 'Water_pH', 'Min 6.5', '6.3 pH', '-3.1%', 'Warning', 'mongo_doc_002', FALSE);
+
+INSERT INTO Compliance_Alerts (AlertID, ProjectID, Parameter, Limit_Value, Actual_Value, Exceeded_By_Pct, Alert_Level, MongoDB_DocRef, Resolved)
+VALUES (4, 3, 'Vibration_mm', '5.0 mm/s', '6.7 mm/s', '+34.0%', 'Critical', 'mongo_doc_003', FALSE);
+
+INSERT INTO Inspectors (InspectorID, Full_Name, Department, Project_Count, Visit_Count, Status)
+VALUES (1, 'Dr. Maya Patel', 'Air Quality Division', 2, 13, 'Active');
+
+INSERT INTO Inspectors (InspectorID, Full_Name, Department, Project_Count, Visit_Count, Status)
+VALUES (2, 'James Okafor', 'Air Quality Division', 2, 4, 'Active');
+
+INSERT INTO Inspectors (InspectorID, Full_Name, Department, Project_Count, Visit_Count, Status)
+VALUES (3, 'Sarah Chen', 'Noise Division', 2, 3, 'Active');
+
+INSERT INTO Inspectors (InspectorID, Full_Name, Department, Project_Count, Visit_Count, Status)
+VALUES (4, 'Ravi Menon', 'Water Division', 1, 3, 'Active');
+
+INSERT INTO Inspectors (InspectorID, Full_Name, Department, Project_Count, Visit_Count, Status)
+VALUES (5, 'Lisa Thornton', 'Environmental Division', 1, 6, 'Inactive');
+`;
+
+function parseSQLSeed(sql) {
+  const projects   = [];
+  const alerts     = [];
+  const inspectors = [];
+  const statements = sql.split(';').map(s => s.trim()).filter(s => s.toUpperCase().startsWith('INSERT'));
+  statements.forEach(stmt => {
+    const tableMatch = stmt.match(/INSERT\s+INTO\s+(\w+)/i);
+    if (!tableMatch) return;
+    const table = tableMatch[1];
+    const colMatch = stmt.match(/\(([^)]+)\)\s*VALUES/i);
+    if (!colMatch) return;
+    const cols = colMatch[1].split(',').map(c => c.trim());
+    const valMatch = stmt.match(/VALUES\s*\((.+)\)\s*$/is);
+    if (!valMatch) return;
+    const rawVals = valMatch[1];
+    const vals = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < rawVals.length; i++) {
+      const ch = rawVals[i];
+      if (ch === "'" && rawVals[i-1] !== '\\') { inQ = !inQ; continue; }
+      if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; continue; }
+      cur += ch;
+    }
+    vals.push(cur.trim());
+    const row = {};
+    cols.forEach((c, i) => {
+      let v = vals[i] ? vals[i].trim() : '';
+      if (['ProjectID','AlertID','InspectorID','Project_Count','Visit_Count'].includes(c)) v = parseInt(v) || 0;
+      if (['Length_km','Budget_USD'].includes(c)) v = parseFloat(v) || 0;
+      if (c === 'Resolved') v = (v.toUpperCase() === 'FALSE' || v === '0') ? false : true;
+      row[c] = v;
+    });
+    if (table === 'Road_Projects') {
+      projects.push({ id: row.ProjectID, name: row.Name, location: row.Location, length: row.Length_km, status: row.Status, contractor: row.Contractor, budget: row.Budget_USD, priority: row.Priority, date: row.Start_Date });
+    } else if (table === 'Compliance_Alerts') {
+      alerts.push({ id: row.AlertID, projectName: projects.find(p => p.id === row.ProjectID)?.name || '—', param: row.Parameter, limit: row.Limit_Value, actual: row.Actual_Value, exceeded: row.Exceeded_By_Pct, level: row.Alert_Level, mongoDoc: row.MongoDB_DocRef, resolved: row.Resolved });
+    } else if (table === 'Inspectors') {
+      inspectors.push({ id: row.InspectorID, name: row.Full_Name, dept: row.Department, projects: row.Project_Count, visits: row.Visit_Count, status: row.Status });
+    }
+  });
+  return { projects, alerts, inspectors };
+}
+
+const db = parseSQLSeed(SQL_SEED);
+let projects   = db.projects;
+let alerts     = db.alerts;
+let inspectors = db.inspectors;
+let nextProjectId   = Math.max(...projects.map(p=>p.id))   + 1;
+let nextAlertId     = Math.max(...alerts.map(a=>a.id))     + 1;
+let nextInspectorId = Math.max(...inspectors.map(i=>i.id)) + 1;
+
+function statusBadge(s) {
+  const map = { 'Under_Construction':'badge-construction','Planning':'badge-planning','Completed':'badge-completed','Suspended':'badge-suspended','Approved':'badge-approved' };
+  return `<span class="badge ${map[s]||''}">${s.replace('_',' ')}</span>`;
+}
+function priorityBadge(p) {
+  const map = { High:'badge-high', Medium:'badge-medium', Low:'badge-low' };
+  return `<span class="badge ${map[p]||''}">${p}</span>`;
+}
+function fmtBudget(n) {
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+  return '$' + n.toLocaleString();
+}
+function initials(name) {
+  return name.replace('Dr. ','').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+
+function renderProjects() {
+  const tb = document.getElementById('projects-tbody');
+  if (!tb) return;
+  if (projects.length === 0) { tb.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:2rem">No projects.</td></tr>`; return; }
+  tb.innerHTML = projects.map(p => `
+    <tr>
+      <td style="color:var(--muted)">${String(p.id).padStart(2,'0')}</td>
+      <td style="color:var(--accent);font-family:'Syne',sans-serif;font-weight:700">${p.name}</td>
+      <td style="color:var(--muted)">${p.location}</td>
+      <td>${p.length} km</td>
+      <td>${statusBadge(p.status)}</td>
+      <td>${p.contractor}</td>
+      <td style="color:var(--green)">${fmtBudget(p.budget)}</td>
+      <td>${priorityBadge(p.priority)}</td>
+      <td style="color:var(--muted)">${p.date}</td>
+      <td><button class="btn-delete" onclick="deleteProject(${p.id})">DELETE</button></td>
+    </tr>`).join('');
+}
+
+function renderAlerts() {
+  const tb = document.getElementById('alerts-tbody');
+  if (!tb) return;
+  if (alerts.length === 0) { tb.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:2rem">No alerts.</td></tr>`; return; }
+  tb.innerHTML = alerts.map(a => {
+    const isCrit = a.level === 'Critical';
+    const col = isCrit ? 'var(--red)' : 'var(--yellow)';
+    const badge = isCrit ? '<span class="badge badge-critical">🔴 Critical</span>' : '<span class="badge badge-warning">🟡 Warning</span>';
+    return `<tr>
+      <td style="color:var(--muted)">#${String(a.id).padStart(3,'0')}</td>
+      <td style="color:var(--accent)">${a.projectName}</td>
+      <td>${a.param}</td>
+      <td>${a.limit}</td>
+      <td style="color:${col};font-weight:700">${a.actual}</td>
+      <td style="color:${col}">${a.exceeded}</td>
+      <td>${badge}</td>
+      <td style="color:var(--muted);font-size:0.65rem">${a.mongoDoc}</td>
+      <td style="color:var(--red)">${a.resolved ? 'Yes' : 'No'}</td>
+      <td><button class="btn-delete" onclick="deleteAlert(${a.id})">DELETE</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderInspectors() {
+  const grid = document.getElementById('inspectors-grid');
+  if (!grid) return;
+  if (inspectors.length === 0) { grid.innerHTML = `<div style="color:var(--muted);font-size:0.72rem;grid-column:1/-1;padding:1rem">No inspectors.</div>`; return; }
+  grid.innerHTML = inspectors.map(i => {
+    const inactive = i.status === 'Inactive';
+    const statusIcon = inactive ? `<span style="color:var(--red)">✗</span>` : `<span style="color:var(--green)">✓</span>`;
+    const avatarStyle = inactive ? 'background:linear-gradient(135deg,var(--muted),#2a3a4a)' : '';
+    return `<div class="inspector-card" style="${inactive?'opacity:0.5':''}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem">
+        <div class="inspector-avatar" style="${avatarStyle}">${initials(i.name)}</div>
+        <button class="btn-delete" onclick="deleteInspector(${i.id})" style="font-size:0.55rem">DELETE</button>
+      </div>
+      <div class="inspector-name">${i.name}</div>
+      <div class="inspector-dept">${i.dept}</div>
+      <div class="inspector-stats">
+        <div class="inspector-stat"><span>${i.projects}</span>Projects</div>
+        <div class="inspector-stat"><span>${i.visits}</span>Visits</div>
+        <div class="inspector-stat">${statusIcon}${i.status}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDashboard() {
+  const el = id => document.getElementById(id);
+  if (el('stat-total-projects')) el('stat-total-projects').textContent = projects.length;
+  const construction = projects.filter(p=>p.status==='Under_Construction').length;
+  if (el('stat-construction'))  el('stat-construction').textContent  = construction;
+  if (el('stat-construction2')) el('stat-construction2').textContent = construction;
+  if (el('stat-planning'))      el('stat-planning').textContent      = projects.filter(p=>p.status==='Planning').length;
+  if (el('stat-completed'))     el('stat-completed').textContent     = projects.filter(p=>p.status==='Completed').length;
+  const openAlerts = alerts.filter(a=>!a.resolved);
+  if (el('stat-open-alerts'))   el('stat-open-alerts').textContent   = openAlerts.length;
+  const crit = openAlerts.filter(a=>a.level==='Critical').length;
+  const warn = openAlerts.filter(a=>a.level==='Warning').length;
+  if (el('stat-alert-sub'))     el('stat-alert-sub').textContent     = `${crit} critical, ${warn} warning`;
+  const totalBudget = projects.reduce((s,p)=>s+p.budget,0);
+  if (el('stat-budget'))        el('stat-budget').textContent        = fmtBudget(totalBudget);
+  const dash = document.getElementById('dashboard-alerts');
+  if (!dash) return;
+  if (openAlerts.length === 0) { dash.innerHTML = `<div style="color:var(--green);font-size:0.75rem;padding:1.5rem;border:1px solid rgba(0,255,157,0.2);background:rgba(0,255,157,0.03)">✓ No active violations detected.</div>`; return; }
+  dash.innerHTML = openAlerts.slice(0,4).map(a => {
+    const isCrit = a.level === 'Critical';
+    const col = isCrit ? 'var(--red)' : 'var(--yellow)';
+    const icon = isCrit ? '🔴' : '🟡';
+    return `<div class="alert-item" style="${isCrit ? '' : 'border-left-color:var(--yellow)'}">
+      <div class="alert-icon">${icon}</div>
+      <div class="alert-body">
+        <div class="alert-title">${a.param} — ${a.projectName}</div>
+        <div class="alert-meta">Limit: ${a.limit} &nbsp;|&nbsp; Actual: ${a.actual}<br>MongoDB ref: ${a.mongoDoc}</div>
+      </div>
+      <div class="alert-value" style="color:${col}">${a.exceeded}<span class="alert-unit">${a.level}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll() {
+  renderProjects();
+  renderAlerts();
+  renderInspectors();
+  renderDashboard();
+  populateAlertProjectSelect();
+}
+
+function populateAlertProjectSelect() {
+  const sel = document.getElementById('a-project');
+  if (!sel) return;
+  sel.innerHTML = projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+}
+
+window.addProject = function() {
+  const name = document.getElementById('p-name').value.trim();
+  const location = document.getElementById('p-location').value.trim();
+  const length = parseFloat(document.getElementById('p-length').value) || 0;
+  const status = document.getElementById('p-status').value;
+  const contractor = document.getElementById('p-contractor').value.trim() || '—';
+  const budget = parseInt(document.getElementById('p-budget').value) || 0;
+  const priority = document.getElementById('p-priority').value;
+  const date = document.getElementById('p-date').value || new Date().toISOString().split('T')[0];
+  if (!name || !location) { showToast('Project name and location are required.', true); return; }
+  projects.push({ id: nextProjectId++, name, location, length, status, contractor, budget, priority, date });
+  closeModal('project-modal');
+  clearForm(['p-name','p-location','p-length','p-contractor','p-budget','p-date']);
+  renderAll();
+  showToast(`✓ Project "${name}" inserted into Road_Projects.`);
+};
+
+window.deleteProject = function(id) {
+  const p = projects.find(x=>x.id===id);
+  if (!p) return;
+  if (!confirm(`DELETE project "${p.name}"? Related alerts will also be removed.`)) return;
+  projects = projects.filter(x=>x.id!==id);
+  alerts = alerts.filter(a=>a.projectName!==p.name);
+  renderAll();
+  showToast(`✓ Project "${p.name}" deleted.`);
+};
+
+window.addAlert = function() {
+  const projectName = document.getElementById('a-project').value;
+  const param = document.getElementById('a-param').value.trim();
+  const actual = document.getElementById('a-actual').value.trim();
+  const limit = document.getElementById('a-limit').value.trim() || '—';
+  const exceeded = document.getElementById('a-exceeded').value.trim() || '—';
+  const level = document.getElementById('a-level').value;
+  if (!param || !actual) { showToast('Parameter and actual reading are required.', true); return; }
+  alerts.push({ id: nextAlertId++, projectName, param, limit, actual, exceeded, level, mongoDoc: `mongo_doc_${String(nextAlertId-1).padStart(3,'0')}`, resolved: false });
+  closeModal('alert-modal');
+  clearForm(['a-param','a-limit','a-actual','a-exceeded']);
+  renderAll();
+  showToast(`✓ Alert for "${projectName}" inserted into Compliance_Alerts.`);
+};
+
+window.deleteAlert = function(id) {
+  const a = alerts.find(x=>x.id===id);
+  if (!a) return;
+  if (!confirm(`DELETE alert #${String(a.id).padStart(3,'0')} (${a.param})?`)) return;
+  alerts = alerts.filter(x=>x.id!==id);
+  renderAll();
+  showToast(`✓ Alert #${id} deleted.`);
+};
+
+window.addInspector = function() {
+  const name = document.getElementById('i-name').value.trim();
+  const dept = document.getElementById('i-dept').value.trim();
+  const visits = parseInt(document.getElementById('i-visits').value) || 0;
+  const prj = parseInt(document.getElementById('i-projects').value) || 0;
+  const status = document.getElementById('i-status').value;
+  if (!name || !dept) { showToast('Name and department are required.', true); return; }
+  inspectors.push({ id: nextInspectorId++, name, dept, projects: prj, visits, status });
+  closeModal('inspector-modal');
+  clearForm(['i-name','i-dept','i-projects','i-visits']);
+  renderAll();
+  showToast(`✓ Inspector "${name}" inserted into Inspectors.`);
+};
+
+window.deleteInspector = function(id) {
+  const i = inspectors.find(x=>x.id===id);
+  if (!i) return;
+  if (!confirm(`DELETE inspector "${i.name}"?`)) return;
+  inspectors = inspectors.filter(x=>x.id!==id);
+  renderAll();
+  showToast(`✓ Inspector "${i.name}" deleted.`);
+};
+
+function openModal(id) { populateAlertProjectSelect(); document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+function clearForm(ids) { ids.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; }); }
+function showToast(msg, isError=false) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (isError ? ' error' : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function showPage(name, evt) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (evt && evt.target) evt.target.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+renderAll();
+</script>
+
+<!-- SQL TERMINAL -->
+<style>
+.sql-terminal {
+  position: fixed;
+  bottom: 1.5rem; right: 1.5rem;
+  width: min(560px, 95vw);
+  background: #020508;
+  border: 1px solid var(--green);
+  box-shadow: 0 0 40px rgba(0,255,157,0.15);
+  z-index: 3000;
+  transform: translateY(120%);
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  font-family: 'JetBrains Mono', monospace;
+}
+.sql-terminal.open { transform: translateY(0); }
+.sql-terminal-header { display: flex; align-items: center; justify-content: space-between; padding: .5rem 1rem; background: rgba(0,255,157,0.08); border-bottom: 1px solid rgba(0,255,157,0.2); }
+.sql-terminal-title { font-size: .65rem; letter-spacing: .15em; color: var(--green); font-weight: 700; }
+.sql-terminal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .9rem; }
+.sql-terminal-body { padding: 1rem; }
+.sql-op-badge { display: inline-block; font-size: .6rem; font-weight: 700; border: 1px solid; padding: .15rem .5rem; margin-bottom: .75rem; letter-spacing: .1em; }
+.sql-query-box { background: #040810; border: 1px solid rgba(0,229,255,0.2); padding: .75rem 1rem; margin-bottom: .75rem; min-height: 3rem; font-size: .72rem; color: var(--accent); line-height: 1.8; white-space: pre-wrap; word-break: break-word; }
+.sql-rows-count { font-size: .6rem; color: var(--green); margin-bottom: .4rem; }
+</style>
+
+<div class="sql-terminal" id="sql-terminal">
+  <div class="sql-terminal-header">
+    <div class="sql-terminal-title">⬡ &nbsp;MySQL LIVE QUERY TERMINAL</div>
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <div style="width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite"></div>
+      <span id="sql-terminal-op" class="sql-op-badge">INSERT</span>
+      <button class="sql-terminal-close" onclick="document.getElementById('sql-terminal').classList.remove('open')">✕</button>
+    </div>
+  </div>
+  <div class="sql-terminal-body">
+    <div class="sql-query-box" id="sql-terminal-query"></div>
+    <div class="sql-rows-count" id="sql-terminal-rows"></div>
+    <div id="sql-terminal-result"></div>
+  </div>
+</div>
+
+<!-- PAGE 5: AI PREDICT -->
+<style>
+  .predict-hero { text-align: center; padding: 3rem 1rem 2rem; position: relative; }
+  .predict-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 40% at 50% 50%, rgba(0,255,157,0.06) 0%, transparent 70%); pointer-events: none; }
+  .predict-tag { display: inline-block; font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green); border: 1px solid var(--green); padding: 0.25rem 0.9rem; margin-bottom: 1rem; }
+  .predict-title { font-family: 'Syne', sans-serif; font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 800; color: var(--text); line-height: 1.1; margin-bottom: 0.75rem; }
+  .predict-title span { color: var(--green); }
+  .predict-subtitle { font-size: 0.75rem; color: var(--muted); max-width: 480px; margin: 0 auto; line-height: 1.8; }
+  .input-panel { background: var(--card); border: 1px solid var(--border); padding: 1.75rem; margin-bottom: 1.5rem; }
+  .input-panel-title { font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
+  .param-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+  .param-field { position: relative; }
+  .param-label { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem; display: flex; justify-content: space-between; }
+  .param-limit { color: rgba(0,229,255,0.5); font-size: 0.55rem; }
+  .param-input { width: 100%; background: #070b10; border: 1px solid var(--border); color: var(--text); padding: 0.55rem 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; outline: none; transition: border-color 0.2s; }
+  .param-input:focus { border-color: var(--accent); }
+  .param-input.danger { border-color: var(--red) !important; color: var(--red); }
+  .param-input.warning { border-color: var(--yellow) !important; color: var(--yellow); }
+  .param-input.safe { border-color: var(--green) !important; }
+  .param-unit { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); font-size: 0.6rem; color: var(--muted); pointer-events: none; margin-top: 0.6rem; }
+  .btn-predict { width: 100%; background: linear-gradient(90deg, rgba(0,255,157,0.15), rgba(0,229,255,0.15)); border: 1px solid var(--green); color: var(--green); padding: 1rem; font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; }
+  .btn-predict:hover { background: linear-gradient(90deg, rgba(0,255,157,0.25), rgba(0,229,255,0.25)); box-shadow: 0 0 20px rgba(0,255,157,0.2); }
+  .btn-predict:disabled { opacity: 0.5; cursor: not-allowed; }
+  .result-panel { display: none; animation: fadeIn 0.4s ease; }
+  .result-panel.visible { display: block; }
+  .risk-banner { padding: 1.5rem 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+  .risk-banner.safe     { background: rgba(0,255,157,0.06); border: 1px solid rgba(0,255,157,0.3); }
+  .risk-banner.warning  { background: rgba(255,209,102,0.06); border: 1px solid rgba(255,209,102,0.3); }
+  .risk-banner.critical { background: rgba(255,59,92,0.06); border: 1px solid rgba(255,59,92,0.4); }
+  .risk-icon { font-size: 3rem; flex-shrink: 0; }
+  .risk-body { flex: 1; }
+  .risk-level { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+  .risk-banner.safe     .risk-level { color: var(--green); }
+  .risk-banner.warning  .risk-level { color: var(--yellow); }
+  .risk-banner.critical .risk-level { color: var(--red); }
+  .risk-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.7; }
+  .risk-score { font-family: 'Syne', sans-serif; font-size: 3.5rem; font-weight: 800; line-height: 1; flex-shrink: 0; }
+  .risk-banner.safe     .risk-score { color: var(--green); }
+  .risk-banner.warning  .risk-score { color: var(--yellow); }
+  .risk-banner.critical .risk-score { color: var(--red); }
+  .risk-score-label { font-size: 0.6rem; color: var(--muted); letter-spacing: 0.1em; text-align: right; }
+  .param-result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .param-result-card { background: var(--card); border: 1px solid var(--border); padding: 1rem 1.25rem; position: relative; overflow: hidden; }
+  .param-result-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; }
+  .param-result-card.p-safe::after    { background: var(--green); }
+  .param-result-card.p-warning::after { background: var(--yellow); }
+  .param-result-card.p-critical::after{ background: var(--red); }
+  .prc-name  { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+  .prc-value { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; line-height: 1; margin-bottom: 0.2rem; }
+  .param-result-card.p-safe     .prc-value { color: var(--green); }
+  .param-result-card.p-warning  .prc-value { color: var(--yellow); }
+  .param-result-card.p-critical .prc-value { color: var(--red); }
+  .prc-limit { font-size: 0.62rem; color: var(--muted); }
+  .prc-pct   { font-size: 0.68rem; font-family: 'Syne', sans-serif; font-weight: 700; margin-top: 0.4rem; }
+  .param-result-card.p-safe     .prc-pct { color: var(--green); }
+  .param-result-card.p-warning  .prc-pct { color: var(--yellow); }
+  .param-result-card.p-critical .prc-pct { color: var(--red); }
+  .ai-analysis { background: #040810; border: 1px solid rgba(0,255,157,0.2); border-left: 3px solid var(--green); padding: 1.5rem; margin-bottom: 1.5rem; }
+  .ai-analysis-label { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--green); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .ai-analysis-label::before { content: ''; width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 1.5s infinite; }
+  .ai-analysis-text { font-size: 0.75rem; color: var(--text); line-height: 2; white-space: pre-wrap; }
+  .trend-box { background: var(--card); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 1.5rem; }
+  .trend-title { font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700; color: var(--text); letter-spacing: 0.05em; margin-bottom: 1.25rem; text-transform: uppercase; }
+  .trend-chart { display: flex; align-items: flex-end; gap: 0.5rem; height: 80px; }
+  .trend-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; height: 100%; justify-content: flex-end; }
+  .trend-bar { width: 100%; transition: height 0.8s cubic-bezier(0.4,0,0.2,1); min-height: 4px; }
+  .trend-bar.t-safe     { background: var(--green); opacity: 0.7; }
+  .trend-bar.t-warning  { background: var(--yellow); opacity: 0.8; }
+  .trend-bar.t-critical { background: var(--red); opacity: 0.9; animation: pulse 2s infinite; }
+  .trend-label { font-size: 0.55rem; color: var(--muted); text-align: center; }
+  .trend-value { font-size: 0.6rem; font-family: 'Syne', sans-serif; font-weight: 700; }
+  .rec-list { list-style: none; padding: 0; }
+  .rec-item { display: flex; gap: 1rem; padding: 0.9rem 1rem; border: 1px solid var(--border); margin-bottom: 0.5rem; background: var(--card); font-size: 0.72rem; color: var(--text); line-height: 1.7; transition: border-color 0.2s; }
+  .rec-item:hover { border-color: var(--accent); }
+  .rec-icon { font-size: 1rem; flex-shrink: 0; }
+  .predict-loading { display: none; text-align: center; padding: 3rem; }
+  .predict-loading.show { display: block; }
+  .spinner { width: 40px; height: 40px; border: 2px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.1em; }
+  .loading-text span { color: var(--green); animation: pulse 1s infinite; }
+</style>
+
+<div id="page-predict" class="page">
+  <div class="predict-hero">
+    <div class="predict-tag">AI-Powered Environmental Analysis</div>
+    <div class="predict-title">Environmental<br><span>Pollution Predictor</span></div>
+    <p class="predict-subtitle">Enter real-time sensor readings from your road construction site. Our AI will analyse every parameter, predict pollution risk, and recommend corrective actions.</p>
+  </div>
+
+  <div class="input-panel">
+    <div class="input-panel-title">🗄 Step 1 — Site Information</div>
+    <div class="param-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))">
+      <div class="form-group">
+        <label class="form-label">Road / Project Name</label>
+        <input class="form-input" id="pred-project" placeholder="e.g. Greenwood Bypass">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Location / Site</label>
+        <input class="form-input" id="pred-location" placeholder="e.g. Section A, Northern End">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Construction Phase</label>
+        <select class="form-select" id="pred-phase">
+          <option>Land Clearing</option>
+          <option>Excavation</option>
+          <option>Foundation Laying</option>
+          <option>Paving / Surfacing</option>
+          <option>Tunnelling</option>
+          <option>Bridge Construction</option>
+          <option>Final Finishing</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nearby Sensitive Area</label>
+        <select class="form-select" id="pred-sensitive">
+          <option>None</option>
+          <option>Residential Zone</option>
+          <option>Hospital / School</option>
+          <option>Water Body / River</option>
+          <option>Forest / Wildlife Area</option>
+          <option>Agricultural Land</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-panel">
+    <div class="input-panel-title">📡 Step 2 — Sensor Readings <span style="font-size:0.6rem;color:var(--muted);font-weight:400;font-family:'JetBrains Mono',monospace">// enter values to see live colour feedback</span></div>
+    <div class="param-grid">
+      <div class="param-field">
+        <div class="param-label">Noise Level <span class="param-limit">Limit: 70 dB</span></div>
+        <input class="param-input" id="pred-noise" type="number" step="0.1" placeholder="dB" oninput="liveCheck(this,70)">
+        <span class="param-unit">dB</span>
+      </div>
+      <div class="param-field">
+        <div class="param-label">PM2.5 Dust <span class="param-limit">Limit: 35 µg/m³</span></div>
+        <input class="param-input" id="pred-pm25" type="number" step="0.1" placeholder="µg/m³" oninput="liveCheck(this,35)">
+        <span class="param-unit">µg/m³</span>
+      </div>
+      <div class="param-field">
+        <div class="param-label">PM10 Dust <span class="param-limit">Limit: 150 µg/m³</span></div>
+        <input class="param-input" id="pred-pm10" type="number" step="0.1" placeholder="µg/m³" oninput="liveCheck(this,150)">
+        <span class="param-unit">µg/m³</span>
+      </div>
+      <div class="param-field">
+        <div class="param-label">CO₂ Level <span class="param-limit">Limit: 400 ppm</span></div>
+        <input class="param-input" id="pred-co2" type="number" step="1" placeholder="ppm" oninput="liveCheck(this,400)">
+        <span class="param-unit">ppm</span>
+      </div>
+      <div class="param-field">
+        <div class="param-label">Water pH <span class="param-limit">Safe: 6.5 – 8.5</span></div>
+        <input class="param-input" id="pred-ph" type="number" step="0.1" placeholder="pH" oninput="livePH(this)">
+        <span class="param-unit">pH</span>
+      </div>
+      <div class="param-field">
+        <div class="param-label">Vibration <span class="param-limit">Limit: 5 mm/s</span></div>
+        <input class="param-input" id="pred-vib" type="number" step="0.1" placeholder="mm/s" oninput="liveCheck(this,5)">
+        <span class="param-unit">mm/s</span>
+      </div>
+      <div class="param-field">
+        <div class="param-label">Turbidity (Water) <span class="param-limit">Limit: 5 NTU</span></div>
+        <input class="param-input" id="pred-turb" type="number" step="0.1" placeholder="NTU" oninput="liveCheck(this,5)">
+        <span class="param-unit">NTU</span>
+      </div>
+      <div class="param-field">
+        <div class="param-label">SO₂ Level <span class="param-limit">Limit: 0.14 ppm</span></div>
+        <input class="param-input" id="pred-so2" type="number" step="0.001" placeholder="ppm" oninput="liveCheck(this,0.14)">
+        <span class="param-unit">ppm</span>
+      </div>
+      <div class="param-field">
+        <div class="param-label">NOₓ Level <span class="param-limit">Limit: 0.10 ppm</span></div>
+        <input class="param-input" id="pred-nox" type="number" step="0.001" placeholder="ppm" oninput="liveCheck(this,0.10)">
+        <span class="param-unit">ppm</span>
+      </div>
+      <div class="param-field">
+        <div class="param-label">Temperature <span class="param-limit">Ref: ambient</span></div>
+        <input class="param-input" id="pred-temp" type="number" step="0.1" placeholder="°C">
+        <span class="param-unit">°C</span>
+      </div>
+    </div>
+    <button class="btn-predict" id="predict-btn" onclick="runPrediction()">⬡ &nbsp;ANALYSE ENVIRONMENTAL IMPACT</button>
+  </div>
+
+  <div class="predict-loading" id="predict-loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Analysing sensor data &nbsp;<span>●</span>&nbsp; Running AI model...</div>
+  </div>
+
+  <div class="result-panel" id="result-panel">
+    <div id="risk-banner" class="risk-banner"></div>
+    <div class="section-header">
+      <div class="section-title">Parameter Breakdown</div>
+      <div class="section-badge">vs Legal Limits</div>
+    </div>
+    <div class="param-result-grid" id="param-result-grid"></div>
+    <div class="section-header">
+      <div class="section-title">Pollution Trend Forecast</div>
+      <div class="section-badge">Next 6 Weeks</div>
+    </div>
+    <div class="trend-box">
+      <div class="trend-title" id="trend-title"></div>
+      <div class="trend-chart" id="trend-chart"></div>
+      <div style="display:flex;gap:0.5rem;margin-top:1rem;flex-wrap:wrap">
+        <span style="font-size:0.6rem;color:var(--green);display:flex;align-items:center;gap:0.3rem"><span style="width:8px;height:8px;background:var(--green);display:inline-block"></span>Safe</span>
+        <span style="font-size:0.6rem;color:var(--yellow);display:flex;align-items:center;gap:0.3rem"><span style="width:8px;height:8px;background:var(--yellow);display:inline-block"></span>Warning</span>
+        <span style="font-size:0.6rem;color:var(--red);display:flex;align-items:center;gap:0.3rem"><span style="width:8px;height:8px;background:var(--red);display:inline-block"></span>Critical</span>
+      </div>
+    </div>
+    <div class="section-header">
+      <div class="section-title">AI Analysis</div>
+      <div class="section-badge" style="color:var(--green);border-color:rgba(0,255,157,0.3)">Claude API</div>
+    </div>
+    <div class="ai-analysis">
+      <div class="ai-analysis-label">Environmental Intelligence Report</div>
+      <div class="ai-analysis-text" id="ai-text">Waiting for analysis...</div>
+    </div>
+    <div class="section-header">
+      <div class="section-title">Recommended Actions</div>
+      <div class="section-badge">Corrective Measures</div>
+    </div>
+    <ul class="rec-list" id="rec-list"></ul>
+    <div style="margin-top:1.5rem;padding:1.25rem;background:rgba(255,59,92,0.04);border:1px solid rgba(255,59,92,0.2)" id="save-alert-box">
+      <div style="font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:var(--red);margin-bottom:0.5rem">⚠ Save Violations to Database</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem">Critical and warning parameters detected. Save them as compliance alerts to your live database?</div>
+      <button class="btn-add" style="border-color:var(--red);color:var(--red);background:rgba(255,59,92,0.08)" onclick="saveViolationsToAlerts()">INSERT violations → Compliance_Alerts</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function liveCheck(el, limit) {
+  const v = parseFloat(el.value);
+  if (isNaN(v) || el.value === '') { el.className = 'param-input'; return; }
+  const pct = ((v - limit) / limit) * 100;
+  if (pct > 20) el.className = 'param-input danger';
+  else if (pct > 0) el.className = 'param-input warning';
+  else el.className = 'param-input safe';
+}
+function livePH(el) {
+  const v = parseFloat(el.value);
+  if (isNaN(v) || el.value === '') { el.className = 'param-input'; return; }
+  if (v < 6.0 || v > 9.0) el.className = 'param-input danger';
+  else if (v < 6.5 || v > 8.5) el.className = 'param-input warning';
+  else el.className = 'param-input safe';
+}
+
+let lastViolations = [];
+function gv(id) { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? null : v; }
+
+function runPrediction() {
+  const readings = { noise: gv('pred-noise'), pm25: gv('pred-pm25'), pm10: gv('pred-pm10'), co2: gv('pred-co2'), ph: gv('pred-ph'), vib: gv('pred-vib'), turb: gv('pred-turb'), so2: gv('pred-so2'), nox: gv('pred-nox'), temp: gv('pred-temp') };
+  const projectName = document.getElementById('pred-project').value.trim() || 'Unknown Site';
+  const location    = document.getElementById('pred-location').value.trim() || '—';
+  const phase       = document.getElementById('pred-phase').value;
+  const sensitive   = document.getElementById('pred-sensitive').value;
+  const hasAny = Object.values(readings).some(v => v !== null);
+  if (!hasAny) { showToast('Please enter at least one sensor reading.', true); return; }
+  document.getElementById('predict-btn').disabled = true;
+  document.getElementById('result-panel').classList.remove('visible');
+  document.getElementById('predict-loading').classList.add('show');
+
+  const params = [
+    { name: 'Noise_dB', val: readings.noise, limit: 70,   unit: 'dB' },
+    { name: 'PM2.5',    val: readings.pm25,  limit: 35,   unit: 'µg/m³' },
+    { name: 'PM10',     val: readings.pm10,  limit: 150,  unit: 'µg/m³' },
+    { name: 'CO₂',      val: readings.co2,   limit: 400,  unit: 'ppm' },
+    { name: 'Vibration',val: readings.vib,   limit: 5,    unit: 'mm/s' },
+    { name: 'Turbidity',val: readings.turb,  limit: 5,    unit: 'NTU' },
+    { name: 'SO₂',      val: readings.so2,   limit: 0.14, unit: 'ppm' },
+    { name: 'NOₓ',      val: readings.nox,   limit: 0.10, unit: 'ppm' },
+  ];
+  if (readings.ph !== null) {
+    const phDev = readings.ph < 6.5 ? ((6.5 - readings.ph) / 6.5) * 100 : readings.ph > 8.5 ? ((readings.ph - 8.5) / 8.5) * 100 : 0;
+    params.push({ name: 'Water_pH', val: readings.ph, limit: null, unit: 'pH', isph: true, phDev });
+  }
+
+  const scored = params.filter(p => p.val !== null).map(p => {
+    if (p.isph) { const level = p.phDev > 15 ? 'critical' : p.phDev > 0 ? 'warning' : 'safe'; return { ...p, pct: p.phDev, level }; }
+    const pct = ((p.val - p.limit) / p.limit) * 100;
+    const level = pct > 20 ? 'critical' : pct > 0 ? 'warning' : 'safe';
+    return { ...p, pct, level };
+  });
+
+  const criticals = scored.filter(p => p.level === 'critical');
+  const warnings  = scored.filter(p => p.level === 'warning');
+  let overallRisk, riskScore;
+  if (criticals.length >= 2)       { overallRisk = 'critical'; riskScore = Math.min(99, 70 + criticals.length * 8); }
+  else if (criticals.length === 1) { overallRisk = 'critical'; riskScore = Math.min(99, 60 + warnings.length * 5); }
+  else if (warnings.length >= 2)   { overallRisk = 'warning';  riskScore = Math.min(59, 40 + warnings.length * 5); }
+  else if (warnings.length === 1)  { overallRisk = 'warning';  riskScore = 30; }
+  else                              { overallRisk = 'safe';     riskScore = Math.max(5, scored.length > 0 ? 15 : 5); }
+
+  let sensitiveNote = '';
+  if (sensitive !== 'None' && overallRisk !== 'safe') sensitiveNote = `⚠ Proximity to ${sensitive} significantly increases environmental risk.`;
+
+  lastViolations = scored.filter(p => p.level !== 'safe').map(p => ({
+    projectName, param: p.name,
+    limit: p.isph ? '6.5–8.5' : `${p.limit} ${p.unit}`,
+    actual: `${p.val} ${p.unit}`,
+    exceeded: p.isph ? `${p.pct.toFixed(1)}% out of range` : `${p.pct > 0 ? '+' : ''}${p.pct.toFixed(1)}%`,
+    level: p.level === 'critical' ? 'Critical' : 'Warning',
+  }));
+
+  setTimeout(() => {
+    renderResults({ scored, criticals, warnings, overallRisk, riskScore, projectName, location, phase, sensitive, sensitiveNote });
+    document.getElementById('predict-loading').classList.remove('show');
+    document.getElementById('result-panel').classList.add('visible');
+    document.getElementById('predict-btn').disabled = false;
+    document.getElementById('result-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 1200);
+  callClaudeAPI({ scored, criticals, warnings, overallRisk, projectName, phase, sensitive, readings });
+}
+
+function renderResults({ scored, criticals, warnings, overallRisk, riskScore, projectName, location, phase, sensitive, sensitiveNote }) {
+  const icons = { safe: '✅', warning: '⚠️', critical: '🔴' };
+  const labels = { safe: 'ENVIRONMENTALLY SAFE', warning: 'WARNING — MONITOR CLOSELY', critical: 'CRITICAL — IMMEDIATE ACTION REQUIRED' };
+  const descs = {
+    safe: `All measured parameters are within legal environmental limits. The construction at <strong>${projectName}</strong> appears to be proceeding responsibly. Continue regular monitoring.`,
+    warning: `Some parameters are exceeding safe limits at <strong>${projectName}</strong>. Immediate mitigation measures should be taken before conditions worsen. ${sensitiveNote}`,
+    critical: `Multiple critical violations detected at <strong>${projectName}</strong>. Construction is causing significant environmental pollution. Work may need to be halted and corrected. ${sensitiveNote}`,
+  };
+  document.getElementById('risk-banner').className = `risk-banner ${overallRisk}`;
+  document.getElementById('risk-banner').innerHTML = `
+    <div class="risk-icon">${icons[overallRisk]}</div>
+    <div class="risk-body">
+      <div class="risk-level">${labels[overallRisk]}</div>
+      <div class="risk-desc">${descs[overallRisk]}</div>
+      <div style="font-size:0.65rem;color:var(--muted);margin-top:0.5rem">📍 ${location} &nbsp;|&nbsp; Phase: ${phase} &nbsp;|&nbsp; Nearby: ${sensitive}</div>
+    </div>
+    <div><div class="risk-score">${riskScore}</div><div class="risk-score-label">RISK<br>SCORE</div></div>`;
+
+  const grid = document.getElementById('param-result-grid');
+  if (scored.length === 0) { grid.innerHTML = `<div style="color:var(--muted);font-size:0.72rem;grid-column:1/-1">No sensor data entered.</div>`; }
+  else {
+    grid.innerHTML = scored.map(p => {
+      const icon = p.level === 'critical' ? '🔴' : p.level === 'warning' ? '🟡' : '🟢';
+      const pctText = p.isph ? (p.pct > 0 ? `${p.pct.toFixed(1)}% out of 6.5–8.5 range` : 'Within safe pH range') : (p.pct > 0 ? `+${p.pct.toFixed(1)}% over limit` : `${p.pct.toFixed(1)}% below limit`);
+      const limitText = p.isph ? 'Safe range: 6.5 – 8.5' : `Legal limit: ${p.limit} ${p.unit}`;
+      return `<div class="param-result-card p-${p.level}">
+        <div class="prc-name">${icon} ${p.name}</div>
+        <div class="prc-value">${p.val} <span style="font-size:0.7rem;font-weight:400">${p.unit}</span></div>
+        <div class="prc-limit">${limitText}</div>
+        <div class="prc-pct">${pctText}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const baseLevel = scored.filter(p=>p.level!=='safe').length;
+  const weeks = ['W1\n(Now)', 'W2', 'W3', 'W4', 'W5', 'W6\n(Proj)'];
+  let trendMultipliers = overallRisk === 'critical' ? [1.0,1.12,1.25,1.35,1.4,1.45] : overallRisk === 'warning' ? [1.0,1.05,1.10,1.08,1.13,1.18] : [1.0,0.95,0.90,0.88,0.85,0.82];
+  const trendValues = trendMultipliers.map(m => Math.max(5, Math.min(100, (baseLevel * 20 + 10) * m)));
+  const trendLevels = trendValues.map(v => v > 60 ? 'critical' : v > 30 ? 'warning' : 'safe');
+  document.getElementById('trend-title').textContent = overallRisk === 'safe' ? '📉 Pollution levels are stable and trending safely.' : overallRisk === 'warning' ? '📈 Pollution is slowly increasing — intervene now to prevent critical levels.' : '🚨 Pollution is escalating rapidly — immediate action required.';
+  document.getElementById('trend-chart').innerHTML = weeks.map((w, i) => `
+    <div class="trend-bar-wrap">
+      <div class="trend-value" style="color:${trendLevels[i]==='critical'?'var(--red)':trendLevels[i]==='warning'?'var(--yellow)':'var(--green)'}">${Math.round(trendValues[i])}</div>
+      <div class="trend-bar t-${trendLevels[i]}" style="height:${trendValues[i]}%"></div>
+      <div class="trend-label">${w}</div>
+    </div>`).join('');
+
+  const recs = buildRecommendations(scored, overallRisk);
+  document.getElementById('rec-list').innerHTML = recs.map(r => `<li class="rec-item"><div class="rec-icon">${r.icon}</div><div>${r.text}</div></li>`).join('');
+  document.getElementById('save-alert-box').style.display = lastViolations.length > 0 ? 'block' : 'none';
+}
+
+function buildRecommendations(scored, overall) {
+  const recs = [];
+  const has = name => scored.find(p => p.name === name && p.level !== 'safe');
+  if (has('Noise_dB'))  recs.push({ icon: '🔇', text: 'Install noise barriers or acoustic blankets around drilling/compaction equipment. Restrict heavy machinery to daytime hours (7AM–6PM) and notify nearby residents.' });
+  if (has('PM2.5') || has('PM10')) recs.push({ icon: '💧', text: 'Deploy water sprinkler systems across the site to suppress dust. Cover all stockpiles of soil and construction materials.' });
+  if (has('CO₂'))       recs.push({ icon: '🌿', text: 'Reduce idling time of diesel engines. Switch to electric or hybrid construction equipment where possible.' });
+  if (has('Water_pH') || has('Turbidity')) recs.push({ icon: '🌊', text: 'Install silt fences and sediment traps along all drainage channels. Conduct pH neutralisation treatment of runoff water before discharge.' });
+  if (has('Vibration')) recs.push({ icon: '🏗', text: 'Reduce compaction frequency and switch to low-vibration rollers. Monitor structural integrity of nearby buildings.' });
+  if (has('SO₂') || has('NOₓ')) recs.push({ icon: '😷', text: 'Check fuel quality and switch to low-sulphur diesel. Ensure all engines meet emission standards.' });
+  if (overall === 'critical') recs.push({ icon: '🛑', text: 'CONSIDER WORK SUSPENSION: Pollution levels are critically high. Notify the environmental regulatory body immediately.' });
+  if (recs.length === 0) recs.push({ icon: '✅', text: 'All parameters are within legal limits. Maintain current practices and continue routine monitoring every 48 hours.' });
+  recs.push({ icon: '📋', text: 'Document all sensor readings in your MongoDB environmental_readings collection and cross-reference against MySQL Environmental_Limits table for audit trail compliance.' });
+  return recs;
+}
+
+async function callClaudeAPI({ scored, criticals, warnings, overallRisk, projectName, phase, sensitive }) {
+  const aiText = document.getElementById('ai-text');
+  aiText.textContent = 'Generating AI analysis...';
+  const violationSummary = scored.filter(p => p.level !== 'safe').map(p => `${p.name}: ${p.val} ${p.unit} (${p.pct > 0 ? '+' : ''}${p.pct.toFixed(1)}% vs limit)`).join(', ') || 'No violations detected';
+  const safeSummary = scored.filter(p => p.level === 'safe').map(p => `${p.name}: ${p.val} ${p.unit}`).join(', ') || 'No safe readings entered';
+  const prompt = `You are an expert environmental compliance engineer analysing a road construction site.\n\nProject: ${projectName}\nConstruction Phase: ${phase}\nNearby Sensitive Area: ${sensitive}\nOverall Risk: ${overallRisk.toUpperCase()}\n\nVIOLATIONS DETECTED: ${violationSummary}\nSAFE PARAMETERS: ${safeSummary}\n\nWrite a concise, professional environmental impact assessment (5-7 sentences). Cover:\n1. What the current readings mean for the local environment and nearby communities\n2. The most dangerous violation and its specific real-world impact\n3. How the construction phase (${phase}) explains the pollution pattern\n4. What will happen if this continues unchecked (long-term impact)\n5. One specific scientific or regulatory reference relevant to the worst violation\n\nBe direct, factual, and use precise environmental engineering language. Do not use bullet points — write in flowing professional paragraphs.`;
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await response.json();
+    if (data.content && data.content[0]) { aiText.textContent = data.content[0].text; }
+    else { aiText.textContent = generateFallbackAnalysis({ scored, criticals, warnings, overallRisk, projectName, phase, sensitive }); }
+  } catch { aiText.textContent = generateFallbackAnalysis({ scored, criticals, warnings, overallRisk, projectName, phase, sensitive }); }
+}
+
+function generateFallbackAnalysis({ scored, criticals, warnings, overallRisk, projectName, phase, sensitive }) {
+  if (overallRisk === 'safe') return `Environmental monitoring at ${projectName} during the ${phase} phase indicates that all measured parameters currently fall within legally mandated limits. Air quality indicators show no significant deviation from baseline values. Noise levels remain compliant with EPA-NOISE-2022 standards. Continued monitoring is recommended to maintain this compliance status throughout the construction lifecycle.`;
+  const worstParam = [...criticals, ...warnings][0];
+  const worstName = worstParam?.name || 'detected parameters';
+  const excess = worstParam ? `${worstParam.pct.toFixed(1)}%` : 'measurably';
+  return `Environmental assessment at ${projectName} during the ${phase} phase has identified ${criticals.length} critical and ${warnings.length} warning-level pollution events. The most severe violation is ${worstName}, which currently exceeds legal thresholds by ${excess}. During the ${phase} phase, heavy machinery operation, ground disturbance, and material handling are primary pollution drivers. ${sensitive !== 'None' ? `The proximity to a ${sensitive} significantly amplifies the environmental and public health risk of these violations.` : ''} If left unaddressed, sustained exceedances of this magnitude can cause irreversible soil contamination, waterway degradation, and long-term respiratory health impacts on nearby populations. Under the Environmental Protection Act and ISO 14001 standards, the site operator is legally obligated to implement immediate corrective measures.`;
+}
+
+function saveViolationsToAlerts() {
+  if (lastViolations.length === 0) { showToast('No violations to save.', true); return; }
+  const projectName = lastViolations[0].projectName;
+  if (!projects.find(p => p.name === projectName) && projectName !== 'Unknown Site') {
+    const location = document.getElementById('pred-location').value.trim() || 'Unknown Location';
+    projects.push({ id: nextProjectId++, name: projectName, location, length: 0, status: 'Under_Construction', contractor: '—', budget: 0, priority: 'High', date: new Date().toISOString().split('T')[0] });
+  }
+  let added = 0;
+  lastViolations.forEach(v => {
+    alerts.push({ id: nextAlertId++, projectName: v.projectName, param: v.param, limit: v.limit, actual: v.actual, exceeded: v.exceeded, level: v.level, mongoDoc: `mongo_doc_${String(nextAlertId-1).padStart(3,'0')}`, resolved: false });
+    added++;
+  });
+  renderAll();
+  showToast(`✓ ${added} violation(s) saved to Compliance_Alerts.`);
+  document.getElementById('save-alert-box').style.display = 'none';
+}
+</script>
+
+</body>
+</html>
